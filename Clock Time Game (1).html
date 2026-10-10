@@ -1,0 +1,605 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Clock Time Game</title>
+<style>
+  /* Layout: centered single-column game, clock fills most of screen */
+  :root {
+    --bg: #f7f9fc;
+    --surface: #ffffff;
+    --fg: #1a2332;
+    --fg-soft: #5a6a7a;
+    --accent: #2e7df7;
+    --accent-dim: #dbeafe;
+    --success: #16a34a;
+    --success-dim: #dcfce7;
+    --error: #dc2626;
+    --error-dim: #fee2e2;
+    --clock-face: #ffffff;
+    --clock-rim: #1a2332;
+    --hour-hand: #1a2332;
+    --minute-hand: #2e7df7;
+    --center-dot: #1a2332;
+    --tick: #1a2332;
+    --tick-minor: #94a3b8;
+    --number: #1a2332;
+    --shadow: 0 4px 24px rgba(30,50,80,0.10);
+    --radius: 16px;
+    font-family: 'Nunito', system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --fg: #e2eaf6;
+      --fg-soft: #94a3b8;
+      --accent: #60a5fa;
+      --accent-dim: #1e3a5f;
+      --success: #4ade80;
+      --success-dim: #14532d;
+      --error: #f87171;
+      --error-dim: #450a0a;
+      --clock-face: #1e293b;
+      --clock-rim: #e2eaf6;
+      --hour-hand: #e2eaf6;
+      --minute-hand: #60a5fa;
+      --center-dot: #60a5fa;
+      --tick: #e2eaf6;
+      --tick-minor: #475569;
+      --number: #e2eaf6;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --fg: #e2eaf6;
+    --fg-soft: #94a3b8;
+    --accent: #60a5fa;
+    --accent-dim: #1e3a5f;
+    --success: #4ade80;
+    --success-dim: #14532d;
+    --error: #f87171;
+    --error-dim: #450a0a;
+    --clock-face: #1e293b;
+    --clock-rim: #e2eaf6;
+    --hour-hand: #e2eaf6;
+    --minute-hand: #60a5fa;
+    --center-dot: #60a5fa;
+    --tick: #e2eaf6;
+    --tick-minor: #475569;
+    --number: #e2eaf6;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-inline: 16px;
+    padding-block: 20px;
+    gap: 16px;
+    min-height: 100%;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+  h1 {
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+    text-align: center;
+  }
+
+  .level-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .level-btn {
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--fg-soft);
+    transition: all 0.15s;
+  }
+  .level-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .level-btn:not(.active):hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .score-row {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-box {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 8px 18px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    min-width: 72px;
+  }
+  .score-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+  }
+  .score-val {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1.2;
+  }
+
+  .prompt-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .prompt-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+  }
+  .prompt-time {
+    font-size: clamp(1.5rem, 6vw, 2.2rem);
+    font-weight: 800;
+    color: var(--fg);
+    letter-spacing: -0.02em;
+  }
+
+  .clock-wrap {
+    position: relative;
+    width: min(280px, 80vw);
+    height: min(280px, 80vw);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #clock-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .feedback {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    padding: 8px 24px;
+    font-weight: 700;
+    font-size: 1rem;
+    width: 100%;
+    max-width: 360px;
+    transition: background 0.2s, color 0.2s;
+    text-align: center;
+  }
+  .feedback.correct {
+    background: var(--success-dim);
+    color: var(--success);
+  }
+  .feedback.wrong {
+    background: var(--error-dim);
+    color: var(--error);
+  }
+  .feedback.idle {
+    background: transparent;
+    color: transparent;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn {
+    border: none;
+    border-radius: 12px;
+    padding: 11px 28px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--fg);
+    box-shadow: var(--shadow);
+  }
+
+  .hint {
+    font-size: 0.78rem;
+    color: var(--fg-soft);
+    text-align: center;
+    max-width: 300px;
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
+
+<h1>⏰ Clock Time Game</h1>
+
+<div class="level-bar">
+  <button class="level-btn active" data-level="1">Hours only</button>
+  <button class="level-btn" data-level="2">Half hours</button>
+  <button class="level-btn" data-level="3">15 minutes</button>
+  <button class="level-btn" data-level="4">5 minutes</button>
+</div>
+
+<div class="score-row">
+  <div class="score-box">
+    <div class="score-label">Score</div>
+    <div class="score-val" id="score">0</div>
+  </div>
+  <div class="score-box">
+    <div class="score-label">Round</div>
+    <div class="score-val" id="round">1</div>
+  </div>
+</div>
+
+<div class="prompt-box">
+  <div class="prompt-label">Set the clock to</div>
+  <div class="prompt-time" id="prompt-time">3:00</div>
+</div>
+
+<div class="clock-wrap" id="clock-wrap">
+  <svg id="clock-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Clock rim -->
+    <circle cx="100" cy="100" r="96" fill="var(--clock-face)" stroke="var(--clock-rim)" stroke-width="5"/>
+    <!-- Tick marks -->
+    <g id="ticks"></g>
+    <!-- Hour numbers -->
+    <g id="numbers"></g>
+    <!-- Minute hand -->
+    <line id="minute-hand" x1="100" y1="100" x2="100" y2="30"
+      stroke="var(--minute-hand)" stroke-width="5" stroke-linecap="round"/>
+    <!-- Hour hand -->
+    <line id="hour-hand" x1="100" y1="100" x2="100" y2="48"
+      stroke="var(--hour-hand)" stroke-width="8" stroke-linecap="round"/>
+    <!-- Center dot -->
+    <circle cx="100" cy="100" r="7" fill="var(--center-dot)"/>
+    <!-- Drag targets (invisible, large touch areas) -->
+    <circle id="hour-target" cx="100" cy="48" r="14" fill="transparent" cursor="grab"/>
+    <circle id="minute-target" cx="100" cy="30" r="14" fill="transparent" cursor="grab"/>
+  </svg>
+</div>
+
+<div class="feedback idle" id="feedback">✓ Correct!</div>
+
+<div class="btn-row">
+  <button class="btn btn-primary" id="check-btn">Check</button>
+  <button class="btn btn-secondary" id="next-btn">New Time</button>
+</div>
+
+<p class="hint">Drag the clock hands to set the time, then tap Check.</p>
+
+<script>
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const cx = 100, cy = 100;
+  const hourR = 52, minuteR = 70; // hand lengths from center
+  const hourTipR = 52, minuteTipR = 70;
+
+  // State
+  let level = 1;
+  let targetH = 3, targetM = 0;
+  let userH = 3, userM = 0; // user-set values
+  let userHourAngle = (3 / 12) * 2 * Math.PI; // stored independently, never overwritten by minute drag
+  let userMinuteAngle = 0; // free movement, not snapped
+  let score = 0, round = 1;
+  let dragging = null; // 'hour' | 'minute'
+
+  // Level configs: [hour step, minute step, minutes array]
+  const levels = {
+    1: { mStep: 60, mOptions: [0] },
+    2: { mStep: 30, mOptions: [0, 30] },
+    3: { mStep: 15, mOptions: [0, 15, 30, 45] },
+    4: { mStep: 5,  mOptions: [0,5,10,15,20,25,30,35,40,45,50,55] },
+  };
+
+  // Build tick marks and numbers
+  function buildFace() {
+    const tickG = document.getElementById('ticks');
+    const numG = document.getElementById('numbers');
+    tickG.innerHTML = '';
+    numG.innerHTML = '';
+    for (let i = 0; i < 60; i++) {
+      const angle = (i / 60) * 2 * Math.PI - Math.PI / 2;
+      const isMajor = i % 5 === 0;
+      const r1 = 88, r2 = isMajor ? 78 : 83;
+      const x1 = cx + r1 * Math.cos(angle);
+      const y1 = cy + r1 * Math.sin(angle);
+      const x2 = cx + r2 * Math.cos(angle);
+      const y2 = cy + r2 * Math.sin(angle);
+      const line = document.createElementNS(SVG_NS, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', isMajor ? 'var(--tick)' : 'var(--tick-minor)');
+      line.setAttribute('stroke-width', isMajor ? '2.5' : '1');
+      tickG.appendChild(line);
+    }
+    for (let h = 1; h <= 12; h++) {
+      const angle = (h / 12) * 2 * Math.PI - Math.PI / 2;
+      const nr = 66;
+      const x = cx + nr * Math.cos(angle);
+      const y = cy + nr * Math.sin(angle);
+      const text = document.createElementNS(SVG_NS, 'text');
+      text.setAttribute('x', x);
+      text.setAttribute('y', y);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'central');
+      text.setAttribute('font-family', 'Nunito, system-ui, sans-serif');
+      text.setAttribute('font-size', '14');
+      text.setAttribute('font-weight', '700');
+      text.setAttribute('fill', 'var(--number)');
+      text.textContent = h;
+      numG.appendChild(text);
+    }
+  }
+
+  // Convert angle (radians from 12 o'clock) to tip x,y
+  function tipPos(angle, r) {
+    return {
+      x: cx + r * Math.sin(angle),
+      y: cy - r * Math.cos(angle)
+    };
+  }
+
+  // Update SVG hands
+  function renderHands() {
+    // Hour hand uses its own independently stored angle — never affected by minute hand
+    const hourAngle = userHourAngle;
+    const minuteAngle = userMinuteAngle;
+
+    const ht = tipPos(hourAngle, hourTipR);
+    const mt = tipPos(minuteAngle, minuteTipR);
+
+    const hourHand = document.getElementById('hour-hand');
+    hourHand.setAttribute('x2', ht.x);
+    hourHand.setAttribute('y2', ht.y);
+
+    const minuteHand = document.getElementById('minute-hand');
+    minuteHand.setAttribute('x2', mt.x);
+    minuteHand.setAttribute('y2', mt.y);
+
+    // Move drag targets
+    document.getElementById('hour-target').setAttribute('cx', ht.x);
+    document.getElementById('hour-target').setAttribute('cy', ht.y);
+    document.getElementById('minute-target').setAttribute('cx', mt.x);
+    document.getElementById('minute-target').setAttribute('cy', mt.y);
+  }
+
+  // Snap hour to integer
+  function snapHour(rawAngle) {
+    let h = Math.round((rawAngle / (2 * Math.PI)) * 12);
+    if (h <= 0) h += 12;
+    if (h > 12) h -= 12;
+    return h;
+  }
+
+  // Snap minute to level step
+  function snapMinute(rawAngle, step) {
+    let m = Math.round((rawAngle / (2 * Math.PI)) * 60 / step) * step;
+    if (m < 0) m += 60;
+    if (m >= 60) m -= 60;
+    return m;
+  }
+
+  // Get SVG coords from a pointer/touch event
+  function svgCoords(e) {
+    const svg = document.getElementById('clock-svg');
+    const rect = svg.getBoundingClientRect();
+    let clientX, clientY;
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    const scaleX = 200 / rect.width;
+    const scaleY = 200 / rect.height;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+
+  // Angle from center, 0 = 12 o'clock, clockwise
+  function angleFrom(x, y) {
+    const dx = x - cx, dy = y - cy;
+    let angle = Math.atan2(dx, -dy);
+    if (angle < 0) angle += 2 * Math.PI;
+    return angle;
+  }
+
+  function distSq(x1, y1, x2, y2) {
+    return (x1-x2)**2 + (y1-y2)**2;
+  }
+
+  // Determine which hand is being grabbed
+  function whichHand(x, y) {
+    const ht = tipPos(userHourAngle, hourTipR);
+    const mt = tipPos(userMinuteAngle, minuteTipR);
+    const dh = distSq(x, y, ht.x, ht.y);
+    const dm = distSq(x, y, mt.x, mt.y);
+    const threshold = 900; // 30px radius
+    if (dh < threshold && dh <= dm) return 'hour';
+    if (dm < threshold) return 'minute';
+    return null;
+  }
+
+  function onPointerDown(e) {
+    e.preventDefault();
+    const {x, y} = svgCoords(e);
+    dragging = whichHand(x, y);
+    if (dragging) {
+      clearFeedback();
+    }
+  }
+
+  function onPointerMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    const {x, y} = svgCoords(e);
+    const angle = angleFrom(x, y);
+    const mStep = levels[level].mStep;
+    if (dragging === 'hour') {
+      // Store the raw angle independently — minute hand never touches this
+      userHourAngle = angle;
+      userH = snapHour(angle);
+    } else {
+      // Free movement — no snapping, store the raw angle and derive minutes from it
+      userMinuteAngle = angle;
+      userM = Math.round((angle / (2 * Math.PI)) * 60);
+      if (userM < 0) userM += 60;
+      if (userM >= 60) userM = 0;
+      // Hour hand is NOT updated here — it stays exactly where the user left it
+    }
+    renderHands();
+  }
+
+  function onPointerUp(e) {
+    dragging = null;
+  }
+
+  // Attach events
+  const wrap = document.getElementById('clock-wrap');
+  wrap.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+  wrap.addEventListener('touchstart', onPointerDown, {passive: false});
+  window.addEventListener('touchmove', onPointerMove, {passive: false});
+  window.addEventListener('touchend', onPointerUp);
+
+  // Generate a new target time
+  function newTarget() {
+    const cfg = levels[level];
+    const mOpts = cfg.mOptions;
+    targetM = mOpts[Math.floor(Math.random() * mOpts.length)];
+    targetH = Math.floor(Math.random() * 12) + 1;
+    // Display
+    const m = String(targetM).padStart(2, '0');
+    document.getElementById('prompt-time').textContent = `${targetH}:${m}`;
+    clearFeedback();
+  }
+
+  function clearFeedback() {
+    const fb = document.getElementById('feedback');
+    fb.textContent = '';
+    fb.className = 'feedback idle';
+  }
+
+  function checkAnswer() {
+    // Convert both target and user times to total minutes for easy comparison
+    const targetTotal = (targetH % 12) * 60 + targetM;
+    const userTotal = (userH % 12) * 60 + userM;
+
+    // Tolerance: ±3 minutes (accounts for ~1 tick of error on minute hand)
+    // Also wrap around midnight (e.g. 12:58 vs 1:00)
+    let diff = Math.abs(targetTotal - userTotal);
+    if (diff > 360) diff = 720 - diff; // wrap around 12-hour cycle (720 min)
+    const withinTolerance = diff <= 3;
+
+    const fb = document.getElementById('feedback');
+    if (withinTolerance) {
+      score++;
+      document.getElementById('score').textContent = score;
+      fb.textContent = '✓ Correct! Great job!';
+      fb.className = 'feedback correct';
+      setTimeout(() => {
+        round++;
+        document.getElementById('round').textContent = round;
+        newTarget();
+      }, 1200);
+    } else {
+      fb.textContent = `Not quite — try again!`;
+      fb.className = 'feedback wrong';
+    }
+  }
+
+  // Level buttons
+  document.querySelectorAll('.level-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      level = parseInt(btn.dataset.level);
+      score = 0; round = 1;
+      document.getElementById('score').textContent = score;
+      document.getElementById('round').textContent = round;
+      userH = 12; userM = 0;
+      userHourAngle = 0; // 12 o'clock
+      userMinuteAngle = 0;
+      renderHands();
+      newTarget();
+    });
+  });
+
+  document.getElementById('check-btn').addEventListener('click', checkAnswer);
+  document.getElementById('next-btn').addEventListener('click', () => {
+    round++;
+    document.getElementById('round').textContent = round;
+    newTarget();
+  });
+
+  // Init
+  buildFace();
+  userH = 3; userM = 0;
+  userHourAngle = (3 / 12) * 2 * Math.PI;
+  userMinuteAngle = 0;
+  renderHands();
+  newTarget();
+</script>
+
+</body></html>
